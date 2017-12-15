@@ -26,10 +26,11 @@ for daynum in range(100):
     if the_day > last_day or the_day in holidays:
         continue
     weekday=days[the_day.weekday()]
+    day_string=f'{class_days+1:02d}'
     if weekday == 'T' or weekday=='Th':
         class_days+=1
-        class_dict[class_days]=the_day.isoformat(' ')
+        class_dict[day_string]=the_day.isoformat()
         
 with open('date_dict.json','w',encoding='utf8') as f:
-    f.write(json.dumps(class_dict,indent=4,ensure_ascii=False))
+    json.dump(class_dict,f,indent=4,ensure_ascii=False)
                  

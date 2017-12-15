@@ -81,4 +81,4 @@ for the_file in files:
         file_list.append((strfile,url.url))
 
 with open('url_list.json','w',encoding='utf8') as f:
-    f.write(json.dumps(file_list,indent=4,ensure_ascii=False))
+    json.dump(file_list,f,indent=4,ensure_ascii=False))

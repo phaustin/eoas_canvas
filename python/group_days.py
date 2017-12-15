@@ -27,7 +27,7 @@ for name,url in url_list:
         the_dict[the_day].append((name,url))
 
 with open('day_dict.json','w',encoding='utf8') as f:
-    f.write(json.dumps(the_dict,indent=4,ensure_ascii=False))
+    json.dump(the_dict,f,indent=4,ensure_ascii=False))
         
         
     
