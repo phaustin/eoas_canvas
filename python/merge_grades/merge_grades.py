@@ -82,7 +82,7 @@ def main(args=None):
         posvec.append(lowercase.find(f'day {args.daynum:02d}')>-1)
     colnum=np.arange(len(df2.columns))[posvec][0]
     colname= df2.columns[colnum]
-    pdb.set_trace()
+    #pdb.set_trace()
 
     #create new dataframes with specified columns
     df3 = df2.iloc[:,np.r_[0,1,colnum]]
