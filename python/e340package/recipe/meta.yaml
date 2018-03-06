@@ -1,0 +1,43 @@
+{% set version = "0.0.1" %}
+
+package:
+  name: e340py
+  version: {{ version }}
+
+source:
+  path: ../
+
+build:
+  number: 2
+  
+  entry_points:
+    - dump_comments = e340py.dump_comments:main
+    - find_links = e340py.find_links:main
+    
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+
+  host:
+    - python
+
+  run:
+    - python
+    - pandas
+
+test:
+  imports:
+    - e340py
+  commands:
+    - dump_comments -h
+
+
+
+about:
+  home: https://clouds.eos.ubc.ca/~phil/courses
+  license: http://www.unidata.ucar.edu/software/netcdf/copyright.html
+  summary: 'e340 courseware'
+
+extra:
+  recipe-maintainers:
+    - phaustin
