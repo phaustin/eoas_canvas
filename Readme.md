@@ -24,12 +24,12 @@
       
   * cd repos/canvas_scripting/python/e340package
 
-         conda build .
-         anaconda upload path-to-bz2file
+        conda build .
+        anaconda upload path-to-bz2file
 
   * test the channel
 
-         conda install -c yourchannel e340py
-         dump_comments -h
+        conda install -c yourchannel e340py
+        dump_comments -h
 
 

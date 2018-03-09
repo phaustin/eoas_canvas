@@ -12,12 +12,13 @@ import argparse
 import pdb
 import textwrap
 
+
 def make_parser():
     linebreaks = argparse.RawTextHelpFormatter
     descrip = textwrap.dedent(globals()['__doc__'])
     parser = argparse.ArgumentParser(formatter_class=linebreaks,
                                      description=descrip)
-    parser.add_argument('csv_file', type=str, help='full path to csv file')
+    parser.add_argument('csv_file', type=str, help='full path to csv file -- pha')
     return parser
 
 def main(args=None):
