@@ -11,6 +11,8 @@
 
 # setting up a development environment for osx
 
+  * git clone https://github.com/phaustin/eoas_canvas.git
+
   * Install current miniconda (say in /Users/phil/ma36)
 
   * Add the followling lines to your .bashrc/.bash_profile:
@@ -21,8 +23,15 @@
   * Start a new terminal and Install conda-build and anaconda-client:
 
         conda install conda-build anaconda-client
-      
-  * cd repos/canvas_scripting/python/e340package
+
+  * cd repos/eoas_canvas
+
+
+  * Work on the package.  To test:
+
+        python tests/testit.py
+
+  * Build and upload to anacond
 
         conda build .
         anaconda upload path-to-bz2file
