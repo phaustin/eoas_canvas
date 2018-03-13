@@ -1,46 +1,43 @@
-{% set version = "0.0.1" %}
+{% set name = "e340py" %}
+{% set version = "1.2.2" %}
 
 package:
-  name: e340py
-  version: {{ version }}
+  name: '{{ name|lower }}'
+  version: '{{ version }}'
 
 source:
   path: ../
 
 build:
-  number: 2
-  
+  number: 0
   entry_points:
     - dump_comments = e340py.dump_comments:main
     - find_links = e340py.find_links:main
-    
-  script: ${PYTHON} -m pip install --no-deps --ignore-installed .
+  script: python -m pip install --no-deps --ignore-installed .
 
 requirements:
-
-  build:
-
-    - python
-    - pip
-  
   host:
     - python
-
+    - setuptools
+    - pip
   run:
     - python
+    - numpy
     - pandas
 
 test:
   imports:
     - e340py
+  requires:
+    - numpy
+    - pandas
   commands:
-    - dump_comments -h
-
+    - dump_comments --help
 
 
 about:
   home: https://clouds.eos.ubc.ca/~phil/courses
-  license: http://www.unidata.ucar.edu/software/netcdf/copyright.html
+  license: MIT
   summary: 'e340 courseware'
 
 extra:
