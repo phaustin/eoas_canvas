@@ -11,9 +11,9 @@ def cleanit(item):
     
 
 def make_simple(the_file,numcols=None):
-    the_file=Path(the_file)    
+    the_file=Path(the_file).resolve()    
     wb=load_workbook(str(the_file),data_only=True)
-    combine,=wb.get_sheet_names()
+    combine,=wb.sheetnames
     sheet=wb[combine]
     row_iter=sheet.iter_rows()
     headers = [c.value for c in next(row_iter) if c.value]
@@ -51,7 +51,7 @@ def make_simple(the_file,numcols=None):
 
 def make_simple_headers(the_file,numcols=None):
     wb=load_workbook(the_file,data_only=True,read_only=True)
-    combine,=wb.get_sheet_names()
+    combine,=wb.sheetnames
     sheet=wb[combine]
     row_iter=sheet.iter_rows()
     headers = [c.value for c in next(row_iter) if c.value]
