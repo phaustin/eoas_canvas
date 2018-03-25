@@ -51,6 +51,27 @@ def make_group_df(group_grades):
     df_group=df_group.set_index('id',drop=False)
     return df_group
 
+def make_canvas_df(canvas_grades):
+    """
+    Parameters
+    ----------
+    canva_grades: str or Path
+       path to canvas csv file
+
+    Returns
+    -------
+
+    df_canvas: DataFrame
+       DataFrame with index set to integer student numbers
+    """
+    canvas_grades=Path(canvas_grades).resolve()
+    df_canvas = pd.read_csv(str(canvas_grades),skiprows=[1,2])
+    ids = df_canvas['SIS User ID'].values
+    df_canvas['id'] = ids.astype(int)
+    df_canvas=df_canvas.set_index('id',drop=False)
+    return df_canvas
+
+
 def make_indiv_df(ind_grades):
     """
     Parameters
@@ -97,14 +118,23 @@ def sanity_check(df_ind,df_group,df_fsc):
     fsc_ids = list(df_fsc.index.values)
     ind_ids = list(df_ind.index.values)
     sep= '_'*20
-    print(f'\{sep} individual ids in gradebook? {sep}\n')
+    print(f'{sep}\nstarting sanity check\n{sep}')
+    accum=[]
     for ind_id in ind_ids:
         if not ind_id in fsc_ids:
-            print(f'individual {ind_id} missing in fsc idlist')
-    print(f'\n{sep} group ids in individual list? {sep}\n')
+            accum.append(ind_id)
+    if len(accum) > 0:
+        print(f'\n{sep}individual ids not found (typos) {accum}{sep}\n')
+    else:
+        print('\nindividual ids look good\n')
+    accum = []
     group_ids = df_group.index.values
     for group_id in group_ids:
         if not group_id in ind_ids:
-            print(f'group id {group_id} missing in individual idlist')
+            accum.append(group_id)
+    if len(accum) > 0:
+        print(f'\n{sep}group ids not found (typos) {accum}{sep}\n')
+    else:
+        print('\ngroup ids look good\n')
             
     
