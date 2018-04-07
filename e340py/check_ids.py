@@ -16,6 +16,8 @@ from .utils.make_tuple import make_tuple
 
 def convert_ids(float_id):
     the_id = [f'{int(item):d}' for item in float_id if not np.isnan(item)]
+    if len(float_id) != len(the_id):
+        raise ValueError('dropped/missing id values in gradesheet')
     return the_id
 
 def make_parser():

@@ -1,6 +1,7 @@
 """
 python make_tickets.py  json_file
 """
+import context
 import argparse
 import json
 import sys
@@ -8,6 +9,11 @@ import pdb
 import numpy as np
 import copy
 import textwrap
+from pathlib import Path
+from e340py.utils.excel_utils import make_simple
+from e340py.utils.make_tuple import make_tuple
+from e340py.get_grade_frames import make_fsc_df
+
 
 def display_marks(row,df_key,df_names):
     """
@@ -89,12 +95,6 @@ def make_parser():
     return parser    
 
 if __name__ == "__main__":
-    import fixpath
-    from pathlib import Path
-    from e340py.utils.excel_utils import make_simple
-    from e340py.utils.make_tuple import make_tuple
-    from e340py.get_grade_frames import make_fsc_df
-
     parser = make_parser()
     args = parser.parse_args()
     with open(args.file_list,'r') as f:

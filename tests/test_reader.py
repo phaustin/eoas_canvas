@@ -16,8 +16,12 @@ import json
 import pdb
 import csv
 import re
-from e340py.utils.make_tuple import make_tuple
+from e340py.utils import make_tuple
+from e340py.utils import read_csv
+
 import numpy as np
+from collections import defaultdict
+
 
 def make_parser():
     linebreaks = argparse.RawTextHelpFormatter
@@ -34,43 +38,25 @@ assign_re = re.compile('.*Assign.*\s(\d+).*')
 hours_re = re.compile('.*How much time did you spend.*')
 ques_re = re.compile('.*something you found confusing or unclear.*')
 
-def read_csv(filename,delim=',',the_id='SIS User ID'):
-    #
-    # canvas uses a BOM
-    # https://stackoverflow.com/questions/17912307/u-ufeff-in-python-string
-    #
-    with open(filename,'r',encoding='utf-8-sig') as f:
-        out=csv.reader(f,delimiter=delim)
-        colnames=next(out)
-        colnames=[item.strip() for item in colnames]
-        theDict=csv.DictReader(f,fieldnames=colnames,delimiter=delim)
-        keep_rows=[]
-        for item in theDict:
-            print(len(keep_rows))
-            #print(item.keys())
-            try:
-                if len(item[the_id]) != 8:
-                    continue
-            except KeyError:
-                print(f'threw KeyError --{the_id}--{item.keys()}')
-                continue
-            #print('csv reader: ',item)
-            keep_rows.append(item)
-    print(f'in reader,rowcount = {len(keep_rows)}')
-    the_frame=pd.DataFrame(keep_rows)
-    the_frame=the_frame.set_index(the_id,drop=False)
-    return the_frame
 
 def boost_grade(row,quiztype='q'):
     comment_points=0
     hours_points=0
+    if row.to_frame().columns[0]=='35228121':
+        print(f'found koby: {row}')
     if quiztype =='q':
         if len(row.comments) > 0 and \
            row.comments != 'none':
            comment_points=1.
+        else:
+            comment_points=0.
     if row.hours > 0 and row.hours < 50:
         hours_points=0.5
-    return comment_points + hours_points
+    out=comment_points + hours_points
+    #print(f'boost: {out} {comment_points} {hours_points}')
+    if np.isnan(out):
+        out=0.
+    return out
 
 if __name__ == "__main__":
     parser=make_parser()
@@ -93,22 +79,22 @@ if __name__ == "__main__":
         day_out=day_re.match(item)
         assign_out = assign_re.match(item)
         if day_out:
-            daynum=('q',int(day_out.groups(1)[0]))
+            daynum=('q',day_out.groups(1)[0])
             dumplist.append((daynum,item))
         elif assign_out:
-            assignnum=('a',int(assign_out.groups(1)[0]))
+            assignnum=('a',assign_out.groups(1)[0])
             dumplist.append((assignnum,item))
         else:
             continue
         
     grade_col_dict=dict(dumplist)
-    #
+    #-----------------------------
     # read in the quiz/assignment results
-    #
+    #-----------------------------
     df_quiz_result=read_csv(args.quiz_file,delim=',',the_id='sis_id')
     quiz_cols = list(df_quiz_result.columns.values)
     #
-    # find the hours column
+        # find the hours column
     #
     for col in quiz_cols:
         hours_string=None
@@ -143,7 +129,38 @@ if __name__ == "__main__":
         df_small_frame['comments']=ques_scores
     
     df_small_frame['boost']=df_small_frame.apply(boost_grade,axis=1,quiztype='q')
+    df_small_frame=pd.DataFrame(df_small_frame[['boost']])
+    old_score = df_gradebook[grade_col_dict[(quiztype,quiznum)]].values
+    clean_score = []
+    for item in old_score:
+        try:
+            out=float(item)
+        except ValueError:
+            out=0
+        clean_score.append(out)
+    df_gradebook['clean_old']=clean_score
+    name_dict=dict()
+    for item in df_gradebook.index.values:
+        if item in name_dict:
+            raise ValueError('found duplicate id')
+        name_dict[item] = df_gradebook.loc[item,'Student']
+
+    mergebook=pd.merge(df_gradebook,df_small_frame,how='left',left_index=True,right_index=True,sort=False)
     pdb.set_trace()
+    checkdict=defaultdict(list)
+    for item in mergebook.index.values:
+        checkdict[item].append(name_dict[item])
+    for key,value in checkdict.items():
+        if len(value) > 1:
+            print(key,value)
+    mergebook.fillna(0.,inplace=True)
+    new_score = mergebook['clean_old'].values + mergebook['boost'].values
+    df_upload= pd.DataFrame(df_gradebook.iloc[:,:4])
+    pdb.set_trace()
+    quiz_col=grade_col_dict[(quiztype,quiznum)]
+    df_upload[quiz_col] = new_score
+    df_upload.to_csv('test_upload.csv',index=False)
+    #pdb.set_trace()
     # df_small_frame['int_id'] = convert_ids(df_small_frame['sis_id'].values)
     # df_small_frame = df_small_frame.set_index('int_id',drop=False)
     # print(df_small_frame.head())
