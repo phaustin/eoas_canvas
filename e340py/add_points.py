@@ -151,10 +151,15 @@ def main(the_args=None):
     with open(n.grade_book,'r',encoding='utf-8-sig') as f:
         df_gradebook=pd.read_csv(f)
     df_gradebook=df_gradebook.fillna(0)
-    points_possible = df_gradebook.iloc[1,:]
-    df_gradebook=df_gradebook.drop([0,1])
+    #-----------------
+    # drop the mute/not mute row
+    # and save points possbile for final write
+    #-----------------
+    df_gradebook=df_gradebook.drop([0])
+    points_possible = df_gradebook.iloc[0,:]
     df_gradebook=clean_id(df_gradebook, id_col = 'SIS User ID')
     df_gradebook=stringify_column(df_gradebook, id_col = 'ID')
+    df_gradebook.iloc[0,:] = points_possible
     grade_cols = list(df_gradebook.columns.values)
     dumplist=[]
     #--------------------
@@ -229,14 +234,21 @@ def main(the_args=None):
     score_column = grade_col_dict[(quiztype,quiznum)]
     mergebook=pd.merge(df_gradebook,df_small_frame,how='left',left_index=True,right_index=True,sort=False)
     new_score = mergebook[score_column].values + mergebook['boost'].values
+    mergebook[score_column] = new_score
     #---------------------
     # now make a new gradebook to upload the new_score column
     # this gradebook has the quiz score header so canvas will overwrite
     #---------------------
-    df_upload= pd.DataFrame(df_gradebook.iloc[:,:4])
-    df_upload[score_column] = new_score
-    df_upload.to_csv(f'{quiztype}_{quiznum}_upload.csv',index=False)
-
+    mandatory_columns = list(mergebook.columns[:5])
+    mandatory_columns = mandatory_columns + [score_column]
+    df_upload= pd.DataFrame(mergebook[mandatory_columns])
+    for item in [1,2,3,4]:
+        points_possible[item] = ' '
+    df_upload.iloc[0,:] = points_possible[mandatory_columns]
+    #pdb.set_trace()
+    new_name = f'{quiztype}_{quiznum}_upload.csv'
+    with open(new_name,'w',encoding='utf-8-sig') as f:
+        df_upload.to_csv(f,index=False,sep=',')
 
 if __name__ == "__main__":
     main()
