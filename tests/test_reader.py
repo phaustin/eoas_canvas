@@ -5,21 +5,19 @@ make a new column in a gradebook
 cd /Users/phil/Nextcloud/e340_coursework/e340_2018_spring/Exams/2018_Spring_Midterm_2_grades/raw_grades
 
 python $ec/test_reader.py file_names.json day22_quiz_results.csv -c q 22
+
+the result is a file called "q_22_upload.csv" which replaces the day quiz results
 """
 import context
-import subprocess
-import shutil
 import os
 import argparse
 import pandas as pd
 import json
 import pdb
-import csv
 import re
 from e340py.utils import make_tuple
 
 import numpy as np
-from collections import defaultdict
 
 
 def make_parser():
@@ -41,9 +39,23 @@ ques_re = re.compile('.*something you found confusing or unclear.*')
 def stringify_column(df,id_col=None):
     """
     turn a column of floating point numbers into characters
-     """
-    the_ids = df[id_col].values
-    the_ids = the_ids.astype(np.int)
+
+    Parameters
+    ----------
+
+    df: dataframe
+        input dataframe from quiz or gradebook
+    id_col: str
+        name of student id column to turn into strings 
+        either 'SIS User ID' or 'ID' for gradebook or
+        'sis_id' or 'id' for quiz results
+
+    Returns
+    -------
+
+    modified dataframe with ids turned from floats into strings
+    """
+    the_ids = df[id_col].values.astype(np.int)
     index_vals = [f'{item:d}' for item in the_ids]
     df[id_col]=index_vals
     return pd.DataFrame(df)
@@ -52,7 +64,23 @@ def clean_id(df,id_col=None):
     """
     give student numbers as floating point, turn
     into 8 character strings, droipping duplicate rows
-    in the case of multiple atemps
+    in the case of multiple attempts
+
+    Parameters
+    ----------
+
+    df: dataframe
+        input dataframe from quiz or gradebook
+    id_col: str
+        name of student id column to turn into strings 
+        either 'SIS User ID' for gradebook or
+        'sis_id'  quiz results
+    
+    Returns
+    -------
+
+    modified dataframe with duplicates removed and index set to 8 character
+    student number
     """
     stringify_column(df,id_col)
     df=df.set_index(id_col,drop=False)
@@ -61,6 +89,21 @@ def clean_id(df,id_col=None):
 
 
 def boost_grade(row,quiztype='q'):
+    """
+     give a row of a dataframe pull the comment and the hours worked and
+     calculate additiona points
+
+    Parameters
+    ----------
+
+    row: Pandas series
+        row of dataframe passed by pandas.apply
+
+    quiztype: str
+        either 'q' for quiz or 'a' for assignment
+        quiz gets a boost for both comments and hours worked
+        assignment only for hours worked
+    """
     comment_points=0
     hours_points=0
     if quiztype =='q':
@@ -127,7 +170,7 @@ if __name__ == "__main__":
     df_quiz_result=clean_id(df_quiz_result, id_col = 'sis_id')
     quiz_cols = list(df_quiz_result.columns.values)
     #
-        # find the hours column
+    # find the hours column
     #
     for col in quiz_cols:
         hours_string=None
@@ -160,56 +203,18 @@ if __name__ == "__main__":
                 break
         ques_scores = df_quiz_result[comment_string]
         df_small_frame['comments']=ques_scores
-    
+    #-----------------
+    # merge the modified quiz result with the gradebook and add the boost
+    #----------------
     df_small_frame['boost']=df_small_frame.apply(boost_grade,axis=1,quiztype='q')
     df_small_frame=pd.DataFrame(df_small_frame[['boost']])
-    old_score = df_gradebook[grade_col_dict[(quiztype,quiznum)]].values
-    clean_score = []
-    for item in old_score:
-        try:
-            out=float(item)
-        except ValueError:
-            out=0
-        clean_score.append(out)
-    df_gradebook['clean_old']=clean_score
-    name_dict=dict()
-    for item in df_gradebook.index.values:
-        if item in name_dict:
-            raise ValueError('found duplicate id')
-        name_dict[item] = df_gradebook.loc[item,'Student']
-
+    score_column = grade_col_dict[(quiztype,quiznum)]
     mergebook=pd.merge(df_gradebook,df_small_frame,how='left',left_index=True,right_index=True,sort=False)
-    checkdict=defaultdict(list)
-    for item in mergebook.index.values:
-        checkdict[item].append(name_dict[item])
-    for key,value in checkdict.items():
-        if len(value) > 1:
-            print(key,value)
-    mergebook.fillna(0.,inplace=True)
-    new_score = mergebook['clean_old'].values + mergebook['boost'].values
+    new_score = mergebook[score_column].values + mergebook['boost'].values
+    #---------------------
+    #now make a new gradebook to upload the new_score column
+    #---------------------
     df_upload= pd.DataFrame(df_gradebook.iloc[:,:4])
-    quiz_col=grade_col_dict[(quiztype,quiznum)]
-    df_upload[quiz_col] = new_score
-    df_upload.to_csv('test_upload.csv',index=False)
-    # df_small_frame['int_id'] = convert_ids(df_small_frame['sis_id'].values)
-    # df_small_frame = df_small_frame.set_index('int_id',drop=False)
-    # print(df_small_frame.head())
-        
-# print(df_quiz_result.head())
-# pdb.set_trace()        
-# print(comment_string)
-# print(hours_string)
-# df_gradebook[grade_col_dict[('q',22)]]
-# pdb.set_trace()
+    df_upload[score_column] = new_score
+    df_upload.to_csv(f'{quiztype}_{quiznum}_upload.csv',index=False)
 
-#def bump_grade(df_gradebook, df_quiz, quiz_col, extra_points):
-    
-
-    # with open(args.csv_out, 'w', newline='') as csvfile:
-    #     fieldnames = list(keep_rows[0].keys())
-    #     fieldnames.append('new test')
-    #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    #     writer.writeheader()
-    #     for item in keep_rows:
-    #         item['new test'] = 1
-    #         writer.writerow(item)
