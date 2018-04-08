@@ -1,6 +1,7 @@
 """
 test_reader.py
-make a new column in a gradebook
+make a new column in a gradebook, adding 1 point if there is a quiz comment, and 0.5 points if
+hours worked is filled in
 
 cd /Users/phil/Nextcloud/e340_coursework/e340_2018_spring/Exams/2018_Spring_Midterm_2_grades/raw_grades
 
@@ -17,7 +18,6 @@ import pdb
 import csv
 import re
 from e340py.utils import make_tuple
-from e340py.utils import read_csv
 
 import numpy as np
 from collections import defaultdict
@@ -40,12 +40,18 @@ ques_re = re.compile('.*something you found confusing or unclear.*')
 
 
 def boost_grade(row,quiztype='q'):
+    """
+     give a row of a dataframe pull the comment and the hours worked and
+     calculate additiona points
+    """
     comment_points=0
     hours_points=0
-    if row.to_frame().columns[0]=='35228121':
-        print(f'found koby: {row}')
     if quiztype =='q':
-        if len(row.comments) > 0 and \
+        try:
+            len_comments=len(row.comments)
+        except TypeError:  #nan
+            len_comments=0
+        if len_comments > 0 and \
            row.comments != 'none':
            comment_points=1.
         else:
@@ -58,6 +64,29 @@ def boost_grade(row,quiztype='q'):
         out=0.
     return out
 
+def stringify_column(df,id_col=None,inplace=True):
+    """
+    turn a column of floating point numbers into characters
+     """
+    the_ids = df[id_col].values
+    the_ids = the_ids.astype(np.int)
+    index_vals = [f'{item:d}' for item in the_ids]
+    df[id_col]=index_vals
+    if not inplace:
+        return pd.DataFrame(df)
+
+def clean_id(df,id_col=None,inplace=True):
+    """
+    give student numbers as floating point, turn
+    into 8 character strings, droipping duplicate rows
+    in the case of multiple atemps
+    """
+    stringify_column(df,id_col)
+    df=df.set_index(id_col,drop=False)
+    df.drop_duplicates(id_col,keep='first',inplace=True)
+    if not inplace:
+        return pd.DataFrame(df)
+
 if __name__ == "__main__":
     parser=make_parser()
     args=parser.parse_args()
@@ -69,12 +98,18 @@ if __name__ == "__main__":
     #
     # read in the gradebook
     #
-    df_gradebook=read_csv(n.grade_book,the_id='SIS User ID')
+    with open(n.grade_book,'r',encoding='utf-8-sig') as f:
+        df_gradebook=pd.read_csv(f)
+    df_gradebook.fillna(0.,inplace=True)
+    points_possible = df_gradebook.iloc[1,:]
+    df_gradebook=df_gradebook.drop([0,1])
+    clean_id(df_gradebook, id_col = 'SIS User ID')
+    stringify_column(df_gradebook, id_col = 'ID')
     grade_cols = list(df_gradebook.columns.values)
     dumplist=[]
-    #
+    # --------------
     # get all assignment and quiz columns from gradebook
-    #
+    # --------------
     for item in grade_cols:
         day_out=day_re.match(item)
         assign_out = assign_re.match(item)
@@ -91,20 +126,24 @@ if __name__ == "__main__":
     #-----------------------------
     # read in the quiz/assignment results
     #-----------------------------
-    df_quiz_result=read_csv(args.quiz_file,delim=',',the_id='sis_id')
+    with open(args.quiz_file,'r',encoding='utf-8-sig') as f:
+        df_quiz_result=pd.read_csv(f)
+    stringify_column(df_quiz_result,'id')
+    df_quiz_result.fillna(0.,inplace=True)
+    clean_id(df_quiz_result, id_col = 'sis_id')
     quiz_cols = list(df_quiz_result.columns.values)
-    #
-        # find the hours column
-    #
+    # ---------------
+    # find the hours column
+    # ---------------
     for col in quiz_cols:
         hours_string=None
         match = hours_re.match(col)
         if match:
             hours_string=col
             break
-    #
-    # add the hours column to a minimal gradebook revision
-    #
+    # ------------------
+    # add the hours column to a 4 column dataframe
+    # ------------------
     comment_string=None
     df_small_frame = pd.DataFrame(df_quiz_result.iloc[:,:4])
     ques_hours = df_quiz_result[hours_string]
@@ -116,9 +155,9 @@ if __name__ == "__main__":
             out=0
         hours_list.append(out)
     df_small_frame['hours']=hours_list
-    #
-    # if it's a quiz instead of an assignment, add the comments
-    #
+    #-------------
+    # if it's a quiz instead of an assignment, find and add the comments column
+    #-------------
     if quiztype == 'q':
         for col in quiz_cols:
             match = ques_re.match(col)
@@ -127,59 +166,15 @@ if __name__ == "__main__":
                 break
         ques_scores = df_quiz_result[comment_string]
         df_small_frame['comments']=ques_scores
-    
+    # --------------
+    #  find the additional points using the two new columns and add as column 'boost'
+    # --------------
     df_small_frame['boost']=df_small_frame.apply(boost_grade,axis=1,quiztype='q')
     df_small_frame=pd.DataFrame(df_small_frame[['boost']])
-    old_score = df_gradebook[grade_col_dict[(quiztype,quiznum)]].values
-    clean_score = []
-    for item in old_score:
-        try:
-            out=float(item)
-        except ValueError:
-            out=0
-        clean_score.append(out)
-    df_gradebook['clean_old']=clean_score
-    name_dict=dict()
-    for item in df_gradebook.index.values:
-        if item in name_dict:
-            raise ValueError('found duplicate id')
-        name_dict[item] = df_gradebook.loc[item,'Student']
-
     mergebook=pd.merge(df_gradebook,df_small_frame,how='left',left_index=True,right_index=True,sort=False)
-    pdb.set_trace()
-    checkdict=defaultdict(list)
-    for item in mergebook.index.values:
-        checkdict[item].append(name_dict[item])
-    for key,value in checkdict.items():
-        if len(value) > 1:
-            print(key,value)
-    mergebook.fillna(0.,inplace=True)
-    new_score = mergebook['clean_old'].values + mergebook['boost'].values
+    old_score_column = grade_col_dict[(quiztype,quiznum)]
+    new_score = mergebook[old_score_column].values + mergebook['boost'].values
     df_upload= pd.DataFrame(df_gradebook.iloc[:,:4])
-    pdb.set_trace()
     quiz_col=grade_col_dict[(quiztype,quiznum)]
     df_upload[quiz_col] = new_score
     df_upload.to_csv('test_upload.csv',index=False)
-    #pdb.set_trace()
-    # df_small_frame['int_id'] = convert_ids(df_small_frame['sis_id'].values)
-    # df_small_frame = df_small_frame.set_index('int_id',drop=False)
-    # print(df_small_frame.head())
-        
-# print(df_quiz_result.head())
-# pdb.set_trace()        
-# print(comment_string)
-# print(hours_string)
-# df_gradebook[grade_col_dict[('q',22)]]
-# pdb.set_trace()
-
-#def bump_grade(df_gradebook, df_quiz, quiz_col, extra_points):
-    
-
-    # with open(args.csv_out, 'w', newline='') as csvfile:
-    #     fieldnames = list(keep_rows[0].keys())
-    #     fieldnames.append('new test')
-    #     writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-    #     writer.writeheader()
-    #     for item in keep_rows:
-    #         item['new test'] = 1
-    #         writer.writerow(item)
