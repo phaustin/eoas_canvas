@@ -1,16 +1,20 @@
 """
-test_reader.py
-make a new column in a gradebook
+
+add_points -- modify a gradebook column to account for comments and hours worked
+
+to run:
 
 cd /Users/phil/Nextcloud/e340_coursework/e340_2018_spring/Exams/2018_Spring_Midterm_2_grades/raw_grades
 
-python $ec/test_reader.py file_names.json day22_quiz_results.csv -c q 22
+quiz 22 example:
+
+add_points file_names.json day22_quiz_results.csv -c q 22
 
 the result is a file called "q_22_upload.csv" which replaces the day quiz results
 
-For an assignment:
+assignment 1 example:
 
-python $ec/test_reader.py file_names.json day22_quiz_results.csv -c q 22
+add_points file_names.json assignment_1_results.csv -c a 1
 
 """
 import os
