@@ -16,35 +16,16 @@ import json
 import pdb
 import csv
 import re
-from e340py.utils import make_tuple, read_csv
+from e340py.utils import make_tuple
 import numpy as np
 from collections import defaultdict
 from dateutil.parser import parse
-print(parse.__doc__)
 
 #Session 1 Performance 1/18/18
 perf_re = re.compile('.*Session\s(\d+)\sPerformance\s(\d+/\d+/\d+).*')
 #Session 1 Participation 1/18/18
 part_re = re.compile('.*Session\s(\d+)\sParticipation\s(\d+/\d+/\d+).*')
 
-
-def read_clickers(filename,delim=','):
-    #
-    # canvas uses a BOM
-    # https://stackoverflow.com/questions/179o12307/u-ufeff-in-python-string
-    #
-    print(f'in read_csv: reading {filename}')
-    keep_rows=[]
-    with open(filename,'r',encoding='utf-8-sig') as f:
-        out=csv.reader(f,delimiter=delim)
-        colnames=next(out)
-        colnames=[item.strip() for item in colnames]
-        possible=next(out)
-        theDict=csv.DictReader(f,fieldnames=colnames,delimiter=delim)
-        for item in theDict:
-            keep_rows.append(item)
-    the_frame=pd.DataFrame(keep_rows)
-    return the_frame, possible
 
 def make_parser():
     linebreaks = argparse.RawTextHelpFormatter
@@ -54,9 +35,8 @@ def make_parser():
     parser.add_argument('json_file',type=str,help='input json file with filenames')
     return parser    
 
-
-if __name__ == "__main__":
-
+def main(the_args=None):
+    
     parser=make_parser()
     args=parser.parse_args()
 
@@ -64,8 +44,13 @@ if __name__ == "__main__":
         name_dict=json.load(f)
     n=make_tuple(name_dict)
 
-    df_clickers, possible = read_clickers(n.pha_clickers)
-    df_gradebook = read_csv(n.grade_book)
+    with open(n.pha_clickers,'r',encoding='utf-8-sig') as f:
+        df_clickers=pd.read_csv(f,sep=',')
+
+    with open(n.grade_book,'r',encoding='utf-8-sig') as f:
+        df_gradebook = pd.read_csv(f,sep=',')
+        
+    pdb.set_trace()
     id_dict={}
     for sis_id,item in df_gradebook.iterrows():
         id_dict[item['ID']] = sis_id
@@ -97,10 +82,6 @@ if __name__ == "__main__":
                     except:
                         num_vals.append(0)
                 col_dict[(the_name,the_sess)]=dict(col=col,date=the_date,vals=num_vals)
-                
-    with open(n.grade_book,'r',encoding='utf-8-sig') as f:
-        out=pd.read_csv(f)
-    with open(n.pha_clickers,'r',encoding='utf-8-sig') as f:
-        out2=pd.read_csv(f)
 
-    pdb.set_trace()
+if __name__ == "__main__":
+    main()
