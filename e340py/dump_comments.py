@@ -2,7 +2,7 @@
 """
 example usage:
 
-/dump_comments "/Users/phil/Downloads/Day 02_ Pre-Class Quiz Quiz Student Analysis Report.csv" > out.txt
+dump_comments "/Users/phil/Downloads/Day 02_ Pre-Class Quiz Quiz Student Analysis Report.csv" > out.txt
 """
 import sys
 import numbers

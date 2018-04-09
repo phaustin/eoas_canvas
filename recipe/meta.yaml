@@ -1,9 +1,11 @@
 {% set name = "e340py" %}
-{% set version = "1.2.2" %}
+{% set data = load_setup_py_data() %}
+
+#https://groups.google.com/a/continuum.io/forum/#!topic/conda/zOLMF4CfnAU
 
 package:
   name: '{{ name|lower }}'
-  version: '{{ version }}'
+  version: {{ data.get('version') }}
 
 source:
   path: ../

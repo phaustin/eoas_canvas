@@ -125,7 +125,7 @@ def boost_grade(row,quiztype='q'):
            comment_points=1.
         else:
             comment_points=0.
-    if row.hours > 0 and row.hours < 50:
+    if row.hours > 0. and row.hours < 50:
         hours_points=0.5
     out=comment_points + hours_points
     #print(f'boost: {out} {comment_points} {hours_points}')
@@ -197,6 +197,10 @@ def main(the_args=None):
         if match:
             hours_string=col
             break
+    bad_hours_ids=df_quiz_result[df_quiz_result[hours_string] == 1000.].index
+    df_quiz_result.loc[bad_hours_ids,hours_string]=0.
+    score_column = grade_col_dict[(quiztype,quiznum)]
+    df_gradebook.loc[bad_hours_ids,score_column]-= 0.5
     #-------------
     # make a minimal copy of the quiz dataframe to work with
     # add hours and (if quiz not assignment) comments columns
@@ -226,12 +230,11 @@ def main(the_args=None):
     #-----------------
     # apply the boost_grade function to calculate bonus points for hours and comments
     #----------------
-    df_small_frame['boost']=df_small_frame.apply(boost_grade,axis=1,quiztype='q')
+    df_small_frame['boost']=df_small_frame.apply(boost_grade,axis=1,quiztype=quiztype)
     df_small_frame=pd.DataFrame(df_small_frame[['boost']])
     #----------------
     # merge the single column df_small_frame onto the gradebook dataframe
     #----------------
-    score_column = grade_col_dict[(quiztype,quiznum)]
     mergebook=pd.merge(df_gradebook,df_small_frame,how='left',left_index=True,right_index=True,sort=False)
     new_score = mergebook[score_column].values + mergebook['boost'].values
     mergebook[score_column] = new_score
@@ -245,7 +248,10 @@ def main(the_args=None):
     for item in [1,2,3,4]:
         points_possible[item] = ' '
     df_upload.iloc[0,:] = points_possible[mandatory_columns]
+    total_points = points_possible[score_column]
     #pdb.set_trace()
+    hit = df_upload[score_column] > total_points
+    df_upload.loc[hit,score_column] = total_points
     new_name = f'{quiztype}_{quiznum}_upload.csv'
     with open(new_name,'w',encoding='utf-8-sig') as f:
         df_upload.to_csv(f,index=False,sep=',')

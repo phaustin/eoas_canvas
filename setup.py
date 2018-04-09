@@ -1,22 +1,17 @@
 #!/usr/bin/env python
 
-# Setup script for PyPI; use CMakeFile.txt to build extension modules
-
-from setuptools import setup
-
-
+from setuptools import setup, find_packages
 
 setup(
-    name='pyutils',
-    packages=['pyutils'],
-    classifiers=[
-        'License :: OSI Approved :: BSD License'
-    ],
+    name = "e340py",
+    version='0.0.5',
+    packages=find_packages(),
     entry_points={
           'console_scripts': [
-              'get_space = pyutils.get_space:main',
-              'killprocs = pyutils.killprocs:main'
+              'dump_comments = e340py.dump_comments:main',
+              'find_links = e340py.find_links:main',
+              'add_points = e340py.add_points:main'
           ]
     },
-    keywords='C++11, Python bindings',
-    long_description="""pybind11""")
+)
+
