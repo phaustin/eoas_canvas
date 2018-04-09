@@ -11,9 +11,9 @@ version = version_file.read().strip()
 setup(
     name = "e340py",
     packages=find_packages(),
-    #version=e340py.__version__,
-    #version="0.1.0",
     version=version,
+    include_package_data=True,
+    package_data={'e340py': ['VERSION']},
     entry_points={
           'console_scripts': [
               'dump_comments = e340py.dump_comments:main',
