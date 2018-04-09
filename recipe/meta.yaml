@@ -13,8 +13,11 @@ source:
 build:
   number: 0
   entry_points:
+    
     - dump_comments = e340py.dump_comments:main
     - find_links = e340py.find_links:main
+    - add_points = e340py.add_points:main
+    
   script: python -m pip install --no-deps --ignore-installed .
 
 requirements:
