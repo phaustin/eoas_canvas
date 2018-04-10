@@ -20,6 +20,9 @@ from e340py.utils import make_tuple
 import numpy as np
 from collections import defaultdict
 from dateutil.parser import parse
+from e340py.utils import clean_id, stringify_column
+from pathlib import Path
+import re
 
 #Session 1 Performance 1/18/18
 perf_re = re.compile('.*Session\s(\d+)\sPerformance\s(\d+/\d+/\d+).*')
@@ -38,32 +41,43 @@ def make_parser():
 def main(the_args=None):
     
     parser=make_parser()
-    args=parser.parse_args()
+    args=parser.parse_args(the_args)
 
     with open(args.json_file,'r') as f:
         name_dict=json.load(f)
     n=make_tuple(name_dict)
 
-    with open(n.pha_clickers,'r',encoding='utf-8-sig') as f:
+    clickers = Path(n.data_dir)/ Path(n.pha_clickers)
+    with open(clickers,'r',encoding='utf-8-sig') as f:
         df_clickers=pd.read_csv(f,sep=',')
-
-    with open(n.grade_book,'r',encoding='utf-8-sig') as f:
+        df_clickers.fillna(0.,inplace=True)
+        df_clickers = clean_id(df_clickers, id_col = 'Student')
+    
+    grade_book = Path(n.data_dir)/ Path(n.grade_book)
+    with open(grade_book,'r',encoding='utf-8-sig') as f:
         df_gradebook = pd.read_csv(f,sep=',')
-        
-    pdb.set_trace()
+        df_gradebook = clean_id(df_gradebook,id_col='SIS User ID')
+        df_gradebook.fillna(0.,inplace=True)
+
+    #-------
+    # make a dictinoary with dict[clicker_id]=sis_id
+    #-------
     id_dict={}
     for sis_id,item in df_gradebook.iterrows():
-        id_dict[item['ID']] = sis_id
+        key = f"{int(item['ID']):d}"
+        id_dict[key] = sis_id
+        
     sis_col=[]
     fake_id_counter = 97  #this is 'a'
-    for clicker_id in df_clickers['ID']:
+    for clicker_id in df_clickers.index:
         try:
             sis_col.append(id_dict[clicker_id])
         except KeyError:   #student not in gradebook
             sis_id = chr(fake_id_counter)*8
             sis_col.append(sis_id)
             fake_id_counter += 1
-
+    df_clickers['SIS User ID'] = sis_col
+    df_clickers = df_clickers.set_index('SIS User ID',drop=False)
     col_dict={}
     regexs=[part_re, perf_re]
     names = ['part','perf']
@@ -82,6 +96,31 @@ def main(the_args=None):
                     except:
                         num_vals.append(0)
                 col_dict[(the_name,the_sess)]=dict(col=col,date=the_date,vals=num_vals)
+    scores = df_clickers.iloc[:,5:-2].values
+    cumscore=np.sum(scores,axis=1)
+    df_clickers['clicker_score']=cumscore
+    only_scores=df_clickers[['clicker_score']]
+    mergebook=pd.merge(df_gradebook,only_scores,how='left',left_index=True,right_index=True,sort=False)
+    return mergebook
+
 
 if __name__ == "__main__":
-    main()
+    mergebook=main()
+    mid_re = re.compile('.*Midterm\s(\d)\s-\sIndividual')
+    mid_dict={}
+    for item in mergebook.columns:
+        mid_match = mid_re.match(item)
+        if mid_match:
+            mid_num=mid_match.group(1)
+            key=f'mid_{mid_num}'
+            mid_dict[key]=item
+    cols = ['Student',mid_dict['mid_1'],mid_dict['mid_2'],'clicker_score']
+    df_results=pd.DataFrame(mergebook[cols])
+    hit = df_results['clicker_score'] == 0.
+    df_missing = pd.DataFrame(df_results.loc[hit,:])
+    df_missing.sort_values(mid_dict['mid_2'],axis=0,inplace=True)
+    
+    
+
+        
+

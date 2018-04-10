@@ -23,7 +23,7 @@ import pandas as pd
 import json
 import pdb
 import re
-from .utils import make_tuple
+from .utils import make_tuple, stringify_column, clean_id
 
 import numpy as np
 
@@ -43,62 +43,13 @@ def make_parser():
 # the hours and comments questions in an individual quiz/assignment
 #-------------
 
+mid_re = re.compile('.*Midterm\s(\d)\s-\sIndividual')
 day_re = re.compile('.*Day\s(\d+).*')
 assign_re = re.compile('.*Assign.*\s(\d+).*')
 hours_re = re.compile('.*How much time did you spend.*')
 ques_re = re.compile('.*something you found confusing or unclear.*')
 
 
-def stringify_column(df,id_col=None):
-    """
-    turn a column of floating point numbers into characters
-
-    Parameters
-    ----------
-
-    df: dataframe
-        input dataframe from quiz or gradebook
-    id_col: str
-        name of student id column to turn into strings 
-        either 'SIS User ID' or 'ID' for gradebook or
-        'sis_id' or 'id' for quiz results
-
-    Returns
-    -------
-
-    modified dataframe with ids turned from floats into strings
-    """
-    the_ids = df[id_col].values.astype(np.int)
-    index_vals = [f'{item:d}' for item in the_ids]
-    df[id_col]=index_vals
-    return pd.DataFrame(df)
-
-def clean_id(df,id_col=None):
-    """
-    give student numbers as floating point, turn
-    into 8 character strings, dropping duplicate rows
-    in the case of multiple attempts
-
-    Parameters
-    ----------
-
-    df: dataframe
-        input dataframe from quiz or gradebook
-    id_col: str
-        name of student id column to turn into strings 
-        either 'SIS User ID' for gradebook or
-        'sis_id'  quiz results
-    
-    Returns
-    -------
-
-    modified dataframe with duplicates removed and index set to 8 character
-    student number
-    """
-    stringify_column(df,id_col)
-    df=df.set_index(id_col,drop=False)
-    df.drop_duplicates(id_col,keep='first',inplace=True)
-    return pd.DataFrame(df)
 
 
 def boost_grade(row,quiztype='q'):

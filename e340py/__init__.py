@@ -2,13 +2,20 @@ from pathlib import Path
 #
 # open the VERSION file and read it into e340py.__version__
 #
-version_file=Path(__file__).parent / Path('VERSION')
-
-if not version_file.is_file():
-    with open(version_file,'w') as f:
-        __version__ = 'no_version'
-        f.write(__version__)
+__version_file__=Path(__file__).parent / Path('VERSION')
+#
+#  if __version_file__ doesn't exist, try to create it and
+#  write 'no_version', if that doesn't work (no write permission), set
+#  __version_file__ to None
+#
+if not __version_file__.is_file():
+    __version__ = 'no_version'
+    try:
+        with open(__version_file__,'w') as f:
+            f.write(__version__)
+    except:
+        __version_file__=None
 else:
-    with open(version_file) as f:
+    with open(__version_file__) as f:
         __version__=f.read().strip()
 
