@@ -14,8 +14,8 @@ setup(
     name = "e340py",
     packages=find_packages(),
     version=__version__,
-    include_package_data=true,
-    package_data={'e340py': ['version']},
+    include_package_data=True,
+    package_data={'e340py': ['VERSION']},
     entry_points={
           'console_scripts': [
               'dump_comments = e340py.dump_comments:main',
