@@ -52,7 +52,14 @@ def main(the_args=None):
         df_clickers=pd.read_csv(f,sep=',')
         df_clickers.fillna(0.,inplace=True)
         df_clickers = clean_id(df_clickers, id_col = 'Student')
-    
+
+    fsc_list = Path(n.data_dir)/ Path(n.fsc_list)
+    with open(fsc_list,'rb') as f:
+        df_fsc=pd.read_excel(f)
+        df_fsc.fillna(0.,inplace=True)
+        #pdb.set_trace()
+        df_fsc = clean_id(df_fsc, id_col = 'Student Number')
+        
     grade_book = Path(n.data_dir)/ Path(n.grade_book)
     with open(grade_book,'r',encoding='utf-8-sig') as f:
         df_gradebook = pd.read_csv(f,sep=',')
@@ -101,11 +108,11 @@ def main(the_args=None):
     df_clickers['clicker_score']=cumscore
     only_scores=df_clickers[['clicker_score']]
     mergebook=pd.merge(df_gradebook,only_scores,how='left',left_index=True,right_index=True,sort=False)
-    return mergebook
+    return mergebook,df_fsc
 
 
 if __name__ == "__main__":
-    mergebook=main()
+    mergebook, df_fsc=main()
     mid_re = re.compile('.*Midterm\s(\d)\s-\sIndividual')
     mid_dict={}
     for item in mergebook.columns:
@@ -114,11 +121,19 @@ if __name__ == "__main__":
             mid_num=mid_match.group(1)
             key=f'mid_{mid_num}'
             mid_dict[key]=item
-    cols = ['Student',mid_dict['mid_1'],mid_dict['mid_2'],'clicker_score']
+    avg_mid = (mergebook[mid_dict['mid_1']] + mergebook[mid_dict['mid_2']])/2.
+    mergebook['avg_mid'] = avg_mid
+    cols = ['Student',mid_dict['mid_1'],mid_dict['mid_2'],'avg_mid','clicker_score']
     df_results=pd.DataFrame(mergebook[cols])
     hit = df_results['clicker_score'] == 0.
     df_missing = pd.DataFrame(df_results.loc[hit,:])
     df_missing.sort_values(mid_dict['mid_2'],axis=0,inplace=True)
+    df_names = df_fsc[['Surname','Given Name']]
+    df_missing=pd.merge(df_missing,df_names,how='left',left_index=True,right_index=True,sort=False)
+    df_missing.sort_values('Surname',inplace=True)
+    pdb.set_trace()
+    
+    
     
     
 
