@@ -216,7 +216,7 @@ def main(the_args=None):
     new_name = root_dir / Path(new_name)
     with open(new_name,'w',encoding='utf-8-sig') as f:
         df_upload.to_csv(f,index=False,sep=',')
-    print(f'created: {str(hew_name)}')
+    print(f'created: {str(new_name)}')
     return None
 
 if __name__ == "__main__":
