@@ -4,7 +4,7 @@ add_points -- modify a gradebook column to account for comments and hours worked
 
 to run:
 
-cd /Users/phil/Nextcloud/e340_coursework/e340_2018_spring/Exams/2018_Spring_Midterm_2_grades/raw_grades
+cd /Users/phil/Nextcloud/e340_2018_spring/Exams/2018_Spring_Midterm_2_grades/raw_grades
 
 quiz 22 example:
 
@@ -23,6 +23,8 @@ import pandas as pd
 import json
 import pdb
 import re
+from pathlib import Path
+import os
 from .utils import make_tuple, stringify_column, clean_id
 
 import numpy as np
@@ -48,8 +50,6 @@ day_re = re.compile('.*Day\s(\d+).*')
 assign_re = re.compile('.*Assign.*\s(\d+).*')
 hours_re = re.compile('.*How much time did you spend.*')
 ques_re = re.compile('.*something you found confusing or unclear.*')
-
-
 
 
 def boost_grade(row,quiztype='q'):
@@ -96,6 +96,7 @@ def main(the_args=None):
     parser=make_parser()
     args=parser.parse_args()
     quiztype,quiznum = list(args.column)
+    quiznum = f'{int(quiznum):02d}'
     keep_rows=[]
     with open(args.json_file,'r') as f:
         name_dict=json.load(f)
@@ -103,7 +104,10 @@ def main(the_args=None):
     #----------------------
     # read in the gradebook
     #----------------------
-    with open(n.grade_book,'r',encoding='utf-8-sig') as f:
+    root_dir = Path(os.environ['HOME']) / Path(n.data_dir)
+    grade_book =  root_dir / Path(n.grade_book)
+    #pdb.set_trace()
+    with open(grade_book,'r',encoding='utf-8-sig') as f:
         df_gradebook=pd.read_csv(f)
     df_gradebook=df_gradebook.fillna(0)
     #-----------------
@@ -122,7 +126,7 @@ def main(the_args=None):
     # and save in grade_col_dict
     #---------------------
     for item in grade_cols:
-        day_out=day_re.match(item)
+        day_out = day_re.match(item)
         assign_out = assign_re.match(item)
         if day_out:
             daynum=('q',day_out.groups(1)[0])
@@ -137,7 +141,8 @@ def main(the_args=None):
     #-----------------------------
     # read the quiz/assignment results into a dataframe
     #-----------------------------
-    with open(args.quiz_file,'r',encoding='utf-8-sig') as f:
+    quiz_file =  root_dir / Path(args.quiz_file)
+    with open(quiz_file,'r',encoding='utf-8-sig') as f:
         df_quiz_result=pd.read_csv(f)
     df_quiz_result=stringify_column(df_quiz_result,'id')
     df_quiz_result.fillna(0.,inplace=True)
@@ -208,8 +213,11 @@ def main(the_args=None):
     hit = df_upload[score_column] > total_points
     df_upload.loc[hit,score_column] = total_points
     new_name = f'{quiztype}_{quiznum}_upload.csv'
+    new_name = root_dir / Path(new_name)
     with open(new_name,'w',encoding='utf-8-sig') as f:
         df_upload.to_csv(f,index=False,sep=',')
+    print(f'created: {str(hew_name)}')
+    return None
 
 if __name__ == "__main__":
     main()

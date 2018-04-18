@@ -2,4 +2,5 @@ import context
 from e340py.add_points import main
 
 if __name__ == "__main__":
-    main()
+    out_file = main()
+    print(f'created: {out_file}')

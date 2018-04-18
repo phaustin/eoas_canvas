@@ -12,6 +12,8 @@ source:
 
 build:
   number: 0
+  noarch: python
+
   entry_points:
     
     - dump_comments = e340py.dump_comments:main
