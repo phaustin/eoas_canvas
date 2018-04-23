@@ -52,6 +52,15 @@ hours_re = re.compile('.*How much time did you spend.*')
 ques_re = re.compile('.*something you found confusing or unclear.*')
 
 
+def find_dups(row,attempts):
+    print(row.to_frame().columns[0])
+    out=list(row.to_dict().keys())
+    attempts[0]+=1
+    print(out)
+
+def check_score(df_quiz,df_gradebook,quiz_col):
+    pass
+
 def boost_grade(row,quiztype='q'):
     """
      give a row of a dataframe pull the comment and the hours worked and
@@ -147,6 +156,15 @@ def main(the_args=None):
     df_quiz_result=stringify_column(df_quiz_result,'id')
     df_quiz_result.fillna(0.,inplace=True)
     df_quiz_result=clean_id(df_quiz_result, id_col = 'sis_id')
+    out=df_quiz_result.groupby('sis_id')
+    for first,last in out:
+        print('*'*20)
+        print(first)
+        print(len(last))
+        if len(last) == 2:
+            print('bingo!')
+        print('*'*20)
+    pdb.set_trace()
     quiz_cols = list(df_quiz_result.columns.values)
     #--------------------
     # find the hours column
@@ -161,6 +179,9 @@ def main(the_args=None):
     df_quiz_result.loc[bad_hours_ids,hours_string]=0.
     score_column = grade_col_dict[(quiztype,quiznum)]
     df_gradebook.loc[bad_hours_ids,score_column]-= 0.5
+    # attempts=[0]
+    # df_quiz_result.apply(find_dups,axis=1,args=(attempts,))
+    # print(f'counted {attempts}')
     #-------------
     # make a minimal copy of the quiz dataframe to work with
     # add hours and (if quiz not assignment) comments columns
