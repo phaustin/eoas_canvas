@@ -59,7 +59,14 @@ def find_dups(row,attempts):
     print(out)
 
 def check_score(df_quiz,df_gradebook,quiz_col):
-    pass
+    the_ids=df_quiz.index.values
+    print(len(the_ids),len(set(the_ids)))
+    quiz_only=df_quiz[['name','score']]
+    gradebook_only = df_gradebook[[quiz_col]]
+    mergequiz=pd.merge(quiz_only,gradebook_only,how='left',left_index=True,right_index=True,sort=False)
+    hit = mergequiz['score'].values != mergequiz[quiz_col].values
+    return mergequiz.loc[hit]
+    
 
 def boost_grade(row,quiztype='q'):
     """
@@ -114,6 +121,7 @@ def main(the_args=None):
     # read in the gradebook
     #----------------------
     root_dir = Path(os.environ['HOME']) / Path(n.data_dir)
+    quiz_dir = Path(os.environ['HOME']) / Path(n.quiz_dir)
     grade_book =  root_dir / Path(n.grade_book)
     #pdb.set_trace()
     with open(grade_book,'r',encoding='utf-8-sig') as f:
@@ -147,24 +155,25 @@ def main(the_args=None):
             continue
         
     grade_col_dict=dict(dumplist)
+    score_column = grade_col_dict[(quiztype,quiznum)]
     #-----------------------------
     # read the quiz/assignment results into a dataframe
     #-----------------------------
-    quiz_file =  root_dir / Path(args.quiz_file)
+    quiz_file =  quiz_dir / Path(args.quiz_file)
     with open(quiz_file,'r',encoding='utf-8-sig') as f:
         df_quiz_result=pd.read_csv(f)
     df_quiz_result=stringify_column(df_quiz_result,'id')
     df_quiz_result.fillna(0.,inplace=True)
     df_quiz_result=clean_id(df_quiz_result, id_col = 'sis_id')
-    out=df_quiz_result.groupby('sis_id')
-    for first,last in out:
-        print('*'*20)
-        print(first)
-        print(len(last))
-        if len(last) == 2:
-            print('bingo!')
-        print('*'*20)
-    pdb.set_trace()
+    # out=df_quiz_result.groupby('sis_id')
+    # for first,last in out:
+    #     print('*'*20)
+    #     print(first)
+    #     print(len(last))
+    #     if len(last) == 2:
+    #         print('bingo!')
+    #     print('*'*20)
+    # pdb.set_trace()
     quiz_cols = list(df_quiz_result.columns.values)
     #--------------------
     # find the hours column
@@ -177,7 +186,6 @@ def main(the_args=None):
             break
     bad_hours_ids=df_quiz_result[df_quiz_result[hours_string] == 1000.].index
     df_quiz_result.loc[bad_hours_ids,hours_string]=0.
-    score_column = grade_col_dict[(quiztype,quiznum)]
     df_gradebook.loc[bad_hours_ids,score_column]-= 0.5
     # attempts=[0]
     # df_quiz_result.apply(find_dups,axis=1,args=(attempts,))
@@ -187,7 +195,7 @@ def main(the_args=None):
     # add hours and (if quiz not assignment) comments columns
     #-------------
     comment_string=None
-    df_small_frame = pd.DataFrame(df_quiz_result.iloc[:,:4])
+    df_quiz_small = pd.DataFrame(df_quiz_result.iloc[:,:4])
     ques_hours = df_quiz_result[hours_string]
     hours_list=[]
     for item in ques_hours:
@@ -196,7 +204,7 @@ def main(the_args=None):
         except ValueError:
             out=0
         hours_list.append(out)
-    df_small_frame['hours']=hours_list
+    df_quiz_small['hours']=hours_list
     #--------------
     # if it's a quiz instead of an assignment, add the comments
     #--------------
@@ -207,30 +215,37 @@ def main(the_args=None):
                 comment_string=col
                 break
         ques_scores = df_quiz_result[comment_string]
-        df_small_frame['comments']=ques_scores
+        df_quiz_small['comments']=ques_scores
     #-----------------
     # apply the boost_grade function to calculate bonus points for hours and comments
     #----------------
-    df_small_frame['boost']=df_small_frame.apply(boost_grade,axis=1,quiztype=quiztype)
-    df_small_frame=pd.DataFrame(df_small_frame[['boost']])
+    df_quiz_small['boost']=df_quiz_small.apply(boost_grade,axis=1,quiztype=quiztype)
+    df_quiz_small=pd.DataFrame(df_quiz_small[['boost']])
     #----------------
-    # merge the single column df_small_frame onto the gradebook dataframe
+    # merge the single column df_quiz_small onto the gradebook dataframe
     #----------------
-    mergebook=pd.merge(df_gradebook,df_small_frame,how='left',left_index=True,right_index=True,sort=False)
+    mergebook=pd.merge(df_gradebook,df_quiz_small,how='left',left_index=True,right_index=True,sort=False)
     new_score = mergebook[score_column].values + mergebook['boost'].values
+    hit = np.isnan(new_score)
+    new_score[hit] = 0.
+    df_check=pd.DataFrame(mergebook[['Student',score_column]])
+    df_check['new_score'] = new_score
+    new_name = f'{quiztype}_{quiznum}_check.csv'
+    new_name = root_dir / Path(new_name)
+    with open(new_name,'w',encoding='utf-8-sig') as f:
+        df_check.to_csv(f,index=False,sep=',')
     mergebook[score_column] = new_score
     #---------------------
     # now make a new gradebook to upload the new_score column
     # this gradebook has the quiz score header so canvas will overwrite
     #---------------------
     mandatory_columns = list(mergebook.columns[:5])
-    mandatory_columns = mandatory_columns + [score_column]
+    mandatory_columns = mandatory_columns + [score_column] 
     df_upload= pd.DataFrame(mergebook[mandatory_columns])
     for item in [1,2,3,4]:
         points_possible[item] = ' '
     df_upload.iloc[0,:] = points_possible[mandatory_columns]
     total_points = points_possible[score_column]
-    #pdb.set_trace()
     hit = df_upload[score_column] > total_points
     df_upload.loc[hit,score_column] = total_points
     new_name = f'{quiztype}_{quiznum}_upload.csv'
