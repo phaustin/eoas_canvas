@@ -25,10 +25,8 @@ from e340py.utils import clean_id, stringify_column
 from pathlib import Path
 import re
 
-#Session 1 Performance 1/18/18
-perf_re = re.compile('.*Session\s(\d+)\sPerformance\s(\d+/\d+/\d+).*')
-#Session 1 Participation 1/18/18
-part_re = re.compile('.*Session\s(\d+)\sParticipation\s(\d+/\d+/\d+).*')
+#Session 1 Total 1/18/18
+re_total = re.compile('.*Session\s(\d+)\sTotal\s(\d+/\d+/\d+).*')
 
 
 def make_parser():
@@ -69,20 +67,19 @@ def main(the_args=None):
     clickers_cj = home_dir / Path(n.clickers_cj)
     df_clickers_cj = clean_clickers(clickers_cj)
 
-    df_clickers_tot = mergebook=pd.merge(df_clickers_win,df_clickers_mac,how='left',left_index=True,right_index=True,sort=False)
-    df_clickers_tot = mergebook=pd.merge(df_clickers_tot,df_clickers_cj,how='left',left_index=True,right_index=True,sort=False)
-    pdb.set_trace()
+    df_clickers = mergebook=pd.merge(df_clickers_win,df_clickers_mac,how='left',left_index=True,right_index=True,sort=False)
+    df_clickers = mergebook=pd.merge(df_clickers,df_clickers_cj,how='left',left_index=True,right_index=True,sort=False)
+
 
     fsc_list = home_dir / Path(n.data_dir)/ Path(n.fsc_list)
     with open(fsc_list,'rb') as f:
-        df_fsc=pd.read_excel(f)
+        df_fsc=pd.read_excel(f,index_col=False)
         df_fsc.fillna(0.,inplace=True)
-        #pdb.set_trace()
         df_fsc = clean_id(df_fsc, id_col = 'Student Number')
         
     grade_book = home_dir / Path(n.data_dir)/ Path(n.grade_book)
     with open(grade_book,'r',encoding='utf-8-sig') as f:
-        df_gradebook = pd.read_csv(f,sep=',')
+        df_gradebook = pd.read_csv(f,sep=',',index_col=False)
         df_gradebook = clean_id(df_gradebook,id_col='SIS User ID')
         df_gradebook.fillna(0.,inplace=True)
 
@@ -105,25 +102,20 @@ def main(the_args=None):
             fake_id_counter += 1
     df_clickers['SIS User ID'] = sis_col
     df_clickers = df_clickers.set_index('SIS User ID',drop=False)
-    col_dict={}
-    regexs=[part_re, perf_re]
-    names = ['part','perf']
+    #
+    # capture all clicker scores in a tuple -- column string, date, scores
+    # keyed by date
+    #
+    column_list=[]
     for col in df_clickers.columns:
-        for the_name, re_exp in zip(names,regexs):
-            the_match=re_exp.match(col)
-            if the_match:
-                the_sess, the_date = the_match.groups()
-                print(f'match: {col}, {the_sess}, {the_date}')
-                date=parse(the_date,dayfirst=False)
-                vals=df_clickers[col].values
-                num_vals=[]
-                for item in vals:
-                    try:
-                        num_vals.append(float(item))
-                    except:
-                        num_vals.append(0)
-                col_dict[(the_name,the_sess)]=dict(col=col,date=the_date,vals=num_vals)
-    scores = df_clickers.iloc[:,5:-2].values
+        the_match=re_total.match(col)
+        if the_match:
+            the_sess, the_date = the_match.groups()
+            print(f'match: {col}, {the_sess}, {the_date}')
+            column_list.append(col)
+    df_scores = pd.DataFrame(df_clickers[column_list])
+    
+    pdb.set_trace()
     cumscore=np.sum(scores,axis=1)
     df_clickers['clicker_score']=cumscore
     only_scores=df_clickers[['clicker_score']]
