@@ -7,6 +7,7 @@ cd /Users/phil/Nextcloud/e340_coursework/e340_2018_spring/Exams/2018_Spring_Midt
 python $ec/test_reader.py file_names.json day22_quiz_results.csv -c q 22
 """
 import context
+import sys
 import subprocess
 import shutil
 import os
@@ -38,20 +39,39 @@ def make_parser():
     parser.add_argument('json_file',type=str,help='input json file with filenames')
     return parser    
 
+def clean_clickers(clicker_file):
+    with open(clicker_file,'r',encoding='utf-8-sig') as f:
+        df_clickers=pd.read_csv(f,sep=',',index_col=False)
+        df_clickers=df_clickers.reset_index()
+        points_possible=df_clickers.iloc[0,:]
+        df_clickers.drop(0,inplace=True)
+        df_clickers.fillna(0.,inplace=True)
+        df_clickers = clean_id(df_clickers, id_col = 'ID')
+    return df_clickers
+
+
 def main(the_args=None):
     
     parser=make_parser()
     args=parser.parse_args(the_args)
-
+    
     with open(args.json_file,'r') as f:
         name_dict=json.load(f)
     n=make_tuple(name_dict)
     home_dir= Path(os.environ['HOME'])
-    clickers = home_dir / Path(n.data_dir)/ Path(n.pha_clickers)
-    with open(clickers,'r',encoding='utf-8-sig') as f:
-        df_clickers=pd.read_csv(f,sep=',')
-        df_clickers.fillna(0.,inplace=True)
-        df_clickers = clean_id(df_clickers, id_col = 'Student')
+    #
+    #  read in all the clickers
+    #
+    clickers_mac = home_dir / Path(n.data_dir)/ Path(n.clickers_mac)
+    df_clickers_mac = clean_clickers(clickers_mac)
+    clickers_win = home_dir / Path(n.data_dir)/ Path(n.clickers_win)
+    df_clickers_win = clean_clickers(clickers_win)
+    clickers_cj = home_dir / Path(n.clickers_cj)
+    df_clickers_cj = clean_clickers(clickers_cj)
+
+    df_clickers_tot = mergebook=pd.merge(df_clickers_win,df_clickers_mac,how='left',left_index=True,right_index=True,sort=False)
+    df_clickers_tot = mergebook=pd.merge(df_clickers_tot,df_clickers_cj,how='left',left_index=True,right_index=True,sort=False)
+    pdb.set_trace()
 
     fsc_list = home_dir / Path(n.data_dir)/ Path(n.fsc_list)
     with open(fsc_list,'rb') as f:
