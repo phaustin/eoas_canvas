@@ -1,5 +1,5 @@
 """
-test_reader.py
+test_clickers.py
 make a new column in a gradebook
 
 cd /Users/phil/Nextcloud/e340_coursework/e340_2018_spring/Exams/2018_Spring_Midterm_2_grades/raw_grades
@@ -46,21 +46,21 @@ def main(the_args=None):
     with open(args.json_file,'r') as f:
         name_dict=json.load(f)
     n=make_tuple(name_dict)
-
-    clickers = Path(n.data_dir)/ Path(n.pha_clickers)
+    home_dir= Path(os.environ['HOME'])
+    clickers = home_dir / Path(n.data_dir)/ Path(n.pha_clickers)
     with open(clickers,'r',encoding='utf-8-sig') as f:
         df_clickers=pd.read_csv(f,sep=',')
         df_clickers.fillna(0.,inplace=True)
         df_clickers = clean_id(df_clickers, id_col = 'Student')
 
-    fsc_list = Path(n.data_dir)/ Path(n.fsc_list)
+    fsc_list = home_dir / Path(n.data_dir)/ Path(n.fsc_list)
     with open(fsc_list,'rb') as f:
         df_fsc=pd.read_excel(f)
         df_fsc.fillna(0.,inplace=True)
         #pdb.set_trace()
         df_fsc = clean_id(df_fsc, id_col = 'Student Number')
         
-    grade_book = Path(n.data_dir)/ Path(n.grade_book)
+    grade_book = home_dir / Path(n.data_dir)/ Path(n.grade_book)
     with open(grade_book,'r',encoding='utf-8-sig') as f:
         df_gradebook = pd.read_csv(f,sep=',')
         df_gradebook = clean_id(df_gradebook,id_col='SIS User ID')
