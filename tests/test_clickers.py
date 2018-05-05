@@ -91,7 +91,7 @@ def mark_course(row):
     if weights != 1:
         raise ValueError(f'{row}')
     grade = s.midterm_1*mid1_weight + s.midterm_2*mid2_weight + s.final_score*final_weight +\
-            s.assign_score*assign_weight + s.quiz_score*quiz_weight + 1
+            s.assign_score*assign_weight + s.quiz_score*quiz_weight + s.clicker_score*clicker_weight + 1
     return grade
 
 def mark_clickers(row):
@@ -162,7 +162,6 @@ def read_finals(file_tuple):
             group_scores.append({'id':the_id,'group_score':the_score})
     df_group=pd.DataFrame.from_records(group_scores)
     df_group=df_group.set_index('id',drop=False)
-    pdb.set_trace()
     #
     # get the individual final
     #
@@ -203,12 +202,17 @@ def main(the_args=None):
     df_clickers = pd.merge(df_clickers_win,df_clickers_mac,how='left',left_index=True,right_index=True,sort=False)
     df_clickers = pd.merge(df_clickers,df_clickers_cj,how='left',left_index=True,right_index=True,sort=False)
 
-
     fsc_list = home_dir / Path(n.data_dir)/ Path(n.fsc_list)
     with open(fsc_list,'rb') as f:
         df_fsc=pd.read_excel(f,index_col=False)
         df_fsc.fillna(0.,inplace=True)
         df_fsc = clean_id(df_fsc, id_col = 'Student Number')
+
+    fsc_list = home_dir / Path(n.data_dir)/ Path(n.posted)
+    with open(fsc_list,'rb') as f:
+        df_posted_fsc=pd.read_excel(f,index_col=False)
+        df_posted_fsc.fillna(0.,inplace=True)
+        df_posted_fsc = clean_id(df_fsc, id_col = 'Student Number')
         
     grade_book = home_dir / Path('course_total') / Path(n.grade_book)
     with open(grade_book,'r',encoding='utf-8-sig') as f:
@@ -305,75 +309,81 @@ def main(the_args=None):
     new_name_dict={mid_col_list[0]:'midterm_1',mid_col_list[1]:'midterm_2'}
     df_course.rename(columns=new_name_dict,inplace=True)
     df_fsc_out = pd.DataFrame(df_fsc[['Surname','Given Name']])
+    pdb.set_trace()
     df_fsc_out = pd.merge(df_fsc_out,df_course,
                           how='left',left_index=True,right_index=True,sort=False)
     course_grade=df_fsc_out.apply(mark_course,axis=1)
-    df_fsc_out['course'] = course_grade
-    with open('fsc_final.csv','w',encoding='utf-8-sig') as f:
-        df_fsc_out.to_csv(f,index=False,sep=',')
-    
-    score_column = final_col_dict['Individual']
+    course_grade[np.isnan(course_grade)] = 0.
+    df_fsc_out['course_corrected'] = np.round(course_grade).astype(np.int)
+    df_fsc_out['posted'] = df_posted_fsc['Percent Grade']
+    df_course=pd.merge(df_course,df_fsc_out[['posted','course_corrected']],
+                           how='left',left_index=True,right_index=True,sort=False)
+    del df_course['Student']
+    pdb.set_trace()
     #
     # work with the real gradebook which has points possible
     #
-    df_upload=pd.DataFrame(df_workbook)
-    score_column = final_col_dict['Individual']
-    df_upload[score_column]=df_upload['ind_score']
-    mandatory_columns = list(df_upload.columns[:5])
-    mandatory_columns = mandatory_columns + [score_column]
-    df_upload= pd.DataFrame(df_upload[mandatory_columns])
-    points_upload=pd.Series(points_possible)
+    df_upload=pd.DataFrame(df_workbook.iloc[:,:5])
+    df_upload=pd.merge(df_upload,df_course,
+                           how='left',left_index=True,right_index=True,sort=False)
+    columns = list(df_workbook.columns[:5])
+    pdb.set_trace()
+    columns.extend(['quiz_score','assign_score','clicker_score','bonus','posted','course_corrected'])
+    df_upload['bonus'] = 1.
+    df_upload=pd.DataFrame(df_upload[columns])
+    total_score=points_possible.values
+    total_score[5:8]=100.
+    total_score[8] = 1.
+    total_score[9] = 100.
+    total_score[10] = 100.
+    upload_possible=pd.Series(total_score[:11],index=df_upload.columns)
     for item in [1,2,3,4]:
-        points_upload[item] = ' '
-    df_upload.iloc[0,:] = points_upload[mandatory_columns]
-    with open('ind_final.csv','w',encoding='utf-8-sig') as f:
-        df_upload.to_csv(f,index=False,sep=',')
+        upload_possible[item] = ' '
+    df_upload=df_upload[columns]
+    df_upload.iloc[0,:] = upload_possible
+    with open('upload_revised.csv','w',encoding='utf-8-sig') as f:
+         df_upload.to_csv(f,index=False,sep=',')
+    # df_upload=pd.DataFrame(df_workbook)
+    # score_column = final_col_dict['Individual']
+    # df_upload[score_column]=df_upload['ind_score']
+    # mandatory_columns = list(df_upload.columns[:5])
+    # mandatory_columns = mandatory_columns + [score_column]
+    # df_upload= pd.DataFrame(df_upload[mandatory_columns])
+    # points_upload=pd.Series(points_possible)
+    # for item in [1,2,3,4]:
+    #     points_upload[item] = ' '
+    # df_upload.iloc[0,:] = points_upload[mandatory_columns]
+    # with open('ind_final.csv','w',encoding='utf-8-sig') as f:
+    #     df_upload.to_csv(f,index=False,sep=',')
 
-    df_upload=pd.DataFrame(df_workbook)
-    score_column = final_col_dict['Group']
-    df_upload[score_column]=df_upload['group_score']
-    mandatory_columns = list(df_upload.columns[:5])
-    mandatory_columns = mandatory_columns + [score_column]
-    df_upload= pd.DataFrame(df_upload[mandatory_columns])
-    df_upload.iloc[0,:] = points_upload[mandatory_columns]
-    with open('group_final.csv','w',encoding='utf-8-sig') as f:
-        df_upload.to_csv(f,index=False,sep=',')
-
-    df_upload=pd.DataFrame(df_workbook)
-    score_column = final_col_dict['Combined']
-    df_upload[score_column]=df_upload['final_score']
-    mandatory_columns = list(df_upload.columns[:5])
-    mandatory_columns = mandatory_columns + [score_column]
-    df_upload= pd.DataFrame(df_upload[mandatory_columns])
-    df_upload.iloc[0,:] = points_upload[mandatory_columns]
-    with open('combined_final.csv','w',encoding='utf-8-sig') as f:
-        df_upload.to_csv(f,index=False,sep=',')
-
+    # df_upload=pd.DataFrame(df_workbook)
+    # score_column = final_col_dict['Group']
+    # df_upload[score_column]=df_upload['group_score']
+    # mandatory_columns = list(df_upload.columns[:5])
+    # mandatory_columns = mandatory_columns + [score_column]
+    # df_upload= pd.DataFrame(df_upload[mandatory_columns])
+    # df_upload.iloc[0,:] = points_upload[mandatory_columns]
+    # with open('group_final.csv','w',encoding='utf-8-sig') as f:
+    #     df_upload.to_csv(f,index=False,sep=',')
+        
+    # df_upload=pd.DataFrame(df_workbook)
+    # score_column = final_col_dict['Combined']
+    # df_upload[score_column]=df_upload['final_score']
+    # mandatory_columns = list(df_upload.columns[:5])
+    # mandatory_columns = mandatory_columns + [score_column]
+    # df_upload= pd.DataFrame(df_upload[mandatory_columns])
+    # df_upload.iloc[0,:] = points_upload[mandatory_columns]
+    # with open('combined_final.csv','w',encoding='utf-8-sig') as f:
+    #     df_upload.to_csv(f,index=False,sep=',')
+    # full_grade = df_fsc_out['course'].values
+    # full_grade[np.isnan(full_grade)]=0.
+    # df_fsc['Percent Grade'] = np.round(full_grade).astype(np.int)
+    # pdb.set_trace()
+    # fsc_list = home_dir / Path(n.data_dir)/ Path('total_upload.xls')
+    # with open(fsc_list,'wb') as f:
+    #     df_fsc.to_excel(f)
         
     return df_fsc_out
 
 if __name__ == "__main__":
     df_fsc=main()
-    course_grade = df_fsc['course'].values
-    num=len(course_grade)
-    print('posted mean: ',np.nanmean(course_grade))
-    print('posted median: ',np.nanmedian(course_grade))
-    print('posted failed: %',np.sum(course_grade< 49.4)/num)
-    print('a or better %',np.sum(course_grade > 79.5)/num)
-    print('b or better %',np.sum(course_grade > 67.5)/num)
-    print('c- or better %',np.sum(course_grade > 54.5)/num)
-    # print('failed ind %',np.sum(df_scores['ind_pc'] < 49.5)/num)
-    # print('group median %',np.nanmedian(df_scores['group_pc']))
-    # print('group less than a %',np.sum(df_scores['group_pc'] < 79.5)/num)
-    # print('group perfect count',np.sum(df_scores['group_pc'] > 99.5))
-
-    df_fsc.to_csv('final_scores.csv')
-    
-    
-    
-    
-    
-    
-
-        
-
