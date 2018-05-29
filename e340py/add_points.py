@@ -125,7 +125,7 @@ def main(the_args=None):
     grade_book =  root_dir / Path(n.grade_book)
     #pdb.set_trace()
     with open(grade_book,'r',encoding='utf-8-sig') as f:
-        df_gradebook=pd.read_csv(f)
+        df_gradebook=pd.read_csv(f,index_col=False,skiprows=[1])
     df_gradebook=df_gradebook.fillna(0)
     #-----------------
     # drop the mute/not mute row

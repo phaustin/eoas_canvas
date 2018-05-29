@@ -1,0 +1,127 @@
+[
+    {
+        "day": "1(1)",
+        "date": "06-Sep",
+        "topic": "Introduction"
+    },
+    {
+        "day": "2(2)",
+        "date": "11-Sep",
+        "topic": "Systems: stocks, flows, & feedbacks"
+    },
+    {
+        "day": "3(2)",
+        "date": "13-Sep",
+        "topic": "Black-body radiation"
+    },
+    {
+        "day": "4(3)",
+        "date": "18-Sep",
+        "topic": "Earth\u2019s Radiation Balance"
+    },
+    {
+        "day": "5(3)",
+        "date": "20-Sep",
+        "topic": "Greenhouse 1"
+    },
+    {
+        "day": "6(4)",
+        "date": "25-Sep",
+        "topic": "Greenhouse 2"
+    },
+    {
+        "day": "7(4)",
+        "date": "27-Sep",
+        "topic": "Greenhouse 3"
+    },
+    {
+        "day": "8(5)",
+        "date": "02-Oct",
+        "topic": "Greenhouse 4"
+    },
+    {
+        "day": "9(5)",
+        "date": "04-Oct",
+        "topic": "Air Temperature & Moisture"
+    },
+    {
+        "day": "10(6)",
+        "date": "09-Oct",
+        "topic": "Climate Sensitivity"
+    },
+    {
+        "day": "11(6)",
+        "date": "11-Oct",
+        "topic": "**MIDTERM 1**"
+    },
+    {
+        "day": "12(7)",
+        "date": "16-Oct",
+        "topic": "Forcings and Feedbacks"
+    },
+    {
+        "day": "13(7)",
+        "date": "18-Oct",
+        "topic": "Paleotemperature 1"
+    },
+    {
+        "day": "14(8)",
+        "date": "23-Oct",
+        "topic": "Paleotemperature 2"
+    },
+    {
+        "day": "15(8)",
+        "date": "25-Oct",
+        "topic": "Milankovitch Cycles"
+    },
+    {
+        "day": "16(9)",
+        "date": "30-Oct",
+        "topic": "Greenhouse Variability:"
+    },
+    {
+        "day": "17(9)",
+        "date": "01-Nov",
+        "topic": "Greenhouse Variability:"
+    },
+    {
+        "day": "18(10)",
+        "date": "06-Nov",
+        "topic": "Greenhouse Variability:"
+    },
+    {
+        "day": "19(10)",
+        "date": "08-Nov",
+        "topic": "Paleo analogues for"
+    },
+    {
+        "day": "20(11)",
+        "date": "13-Nov",
+        "topic": "**MIDTERM 2**"
+    },
+    {
+        "day": "21(11)",
+        "date": "15-Nov",
+        "topic": "How Do We Know It\u2019s Us?"
+    },
+    {
+        "day": "22(12)",
+        "date": "20-Nov",
+        "topic": "Climate Modelling"
+    },
+    {
+        "day": "23(12)",
+        "date": "22-Nov",
+        "topic": "Climate Forecasts"
+    },
+    {
+        "day": "24(13)",
+        "date": "27-Nov",
+        "topic": "Future Decisions for Humanity"
+    },
+    {
+        "day": "25(13)",
+        "date": "29-Nov",
+        "topic": "Final review"
+    }
+]
