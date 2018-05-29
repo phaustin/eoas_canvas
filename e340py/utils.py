@@ -1,6 +1,13 @@
 from collections import namedtuple, defaultdict
 import pandas as pd
 import numpy as np
+import pdb
+import re
+
+day_re = re.compile('.*Day\s(\d+).*')
+assign_re = re.compile('.*Assign.*\s(\d+).*')
+mid_re = re.compile('.*Mid.*Combi*')
+
 
 def make_tuple(in_dict,tupname='values'):
     """
@@ -44,8 +51,16 @@ def stringify_column(df,id_col=None):
 
     modified dataframe with ids turned from floats into strings
     """
-    the_ids = df[id_col].values.astype(np.int)
-    index_vals = [f'{item:d}' for item in the_ids]
+    float_ids=df[id_col].values
+    #
+    # if points_possible is present it will be NaN, set to zero
+    #
+    try:
+        float_ids[np.isnan(float_ids)]=0.
+        the_ids = df[id_col].values.astype(np.int)
+        index_vals = [f'{item:d}' for item in the_ids]
+    except TypeError:
+        index_vals = float_ids
     df[id_col]=index_vals
     return pd.DataFrame(df)
 
