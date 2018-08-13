@@ -15,15 +15,16 @@ API_URL = "https://canvas.ubc.ca"
 # Canvas API key
 API_KEY = token
 nicknames={'a301':'ATSC 301 Atmospheric Radiation and Remote Sensing',
-           'e340':'EOSC 340 101 Global Climate Change'}
+           'e340':'EOSC 340 101 Global Climate Change',
+           'box':'Philip_Sandbox'}
 
 #
 # get the courses and make a dictionary of coursename,id values
 #
 canvas = Canvas(API_URL, API_KEY)
-out=list(canvas.get_courses())
+courses=list(canvas.get_courses())
 keep=dict()
-for item in out:
+for item in courses:
     for shortname,longname in nicknames.items():
         if item.name.find(longname) > -1:
             keep[shortname]=item.id
@@ -31,19 +32,22 @@ for item in out:
 #
 # find all modules in e340
 #
-e340=canvas.get_course(keep['e340'])
-out=e340.get_modules()
-modules=list(out)
+course='box'
+e340=canvas.get_course(keep[course])
+modules=e340.get_modules()
+modules=list(modules)
 #
 # now grab rthe one with Assignments in its name
 #
+module_name='day 1 test module'
 module_dict=dict()
 for item in modules:
     module_dict[item.name]=item
-    if item.name.find('Weekly Assignments') > -1:
+    if item.name.find(module_name) > -1:
         assign_module=item
 
 print(f'found module: {assign_module}')
+
 
 # secret_dict=dict(token=token)
 # with open('.canvas.json','w') as f:
@@ -53,8 +57,13 @@ print(f'found module: {assign_module}')
 # with open('savecourse.json','w') as out:
 #     json.dump(json_out,out,indent=4)
 
-out=assign_module.edit(module={'name':'assignpha'})  # 
-print(out)
+#pdb.set_trace()
+#out=assign_module.edit(module={'name':'assignpha'})  #
+out=assign_module.set_attributes({'name':'assignpha'})  #
+print(assign_module)
+assign_module.edit()
+pdb.set_trace()
+
 
 
 
