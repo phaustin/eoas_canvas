@@ -11,6 +11,7 @@ import pandas as pd
 import argparse
 import pdb
 import textwrap
+import os
 
 
 def make_parser():
@@ -25,6 +26,7 @@ def main(args=None):
     """
     args: optional -- if missing then args will be taken from command line
     """
+    nl=os.linesep
     parser = make_parser()
     args = parser.parse_args(args)
     df_quiz=pd.read_csv(args.csv_file)
@@ -48,8 +50,7 @@ def main(args=None):
         #
         if isinstance(item,numbers.Real):
             continue
-        print(f'\n{dashes}\n{item}\n{dashes}\n')
-        
+        sys.stdout.write(f"{nl}{dashes}{nl}{item}{nl}{dashes}{nl}")
     
 if __name__=="__main__":
     main()
