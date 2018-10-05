@@ -2,7 +2,14 @@
 """
 example usage:
 
-dump_comments "/Users/phil/Downloads/Day 02_ Pre-Class Quiz Quiz Student Analysis Report.csv" > out.txt
+    dump_comments day9.csv
+
+produces text file day9.txt
+
+    dump_comments -o day9_comments.txt day9.csv
+
+produces day9_comments.txt
+
 """
 import sys
 import numbers
@@ -12,6 +19,7 @@ import argparse
 import pdb
 import textwrap
 import os
+from pathlib import Path
 
 
 def make_parser():
@@ -19,7 +27,8 @@ def make_parser():
     descrip = textwrap.dedent(globals()['__doc__'])
     parser = argparse.ArgumentParser(formatter_class=linebreaks,
                                      description=descrip)
-    parser.add_argument('csv_file', type=str, help='full path to csv file -- pha')
+    parser.add_argument('csv_file', type=str, help='path to csv file')
+    parser.add_argument('--outfile','-o',type=str,help='optional name for output file, defaults to txt suffix')
     return parser
 
 def main(args=None):
@@ -29,7 +38,15 @@ def main(args=None):
     nl=os.linesep
     parser = make_parser()
     args = parser.parse_args(args)
-    df_quiz=pd.read_csv(args.csv_file)
+    infile=Path(args.csv_file)
+    df_quiz=pd.read_csv(infile,encoding="utf-8")
+    work_dir=infile.parent
+    if args.outfile:
+        outfile_name=Path(args.outfile)
+    else:
+        in_file=Path(args.csv_file).resolve()
+        outfile_name=infile.with_suffix('.txt')
+    print(f'writing to: {outfile_name}')
     #pdb.set_trace()
     posvec=[]
     dashes='-'*20
@@ -44,13 +61,14 @@ def main(args=None):
     # grab all rows for that column and print to stdout
     #
     responses=df_quiz.iloc[:,colnum]
-    for item in responses:
-        #
-        # skip empty cells with nan entrines
-        #
-        if isinstance(item,numbers.Real):
-            continue
-        sys.stdout.write(f"{nl}{dashes}{nl}{item}{nl}{dashes}{nl}")
+    with open(outfile_name,'w',encoding='utf-8') as f:
+        for item in responses:
+            #
+            # skip empty cells with nan entrines
+            #
+            if isinstance(item,numbers.Real):
+                continue
+            f.write(f"\n{dashes}\n{item}\n{dashes}\n")
     
 if __name__=="__main__":
     main()
