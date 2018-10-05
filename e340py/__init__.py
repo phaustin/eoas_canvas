@@ -1,6 +1,7 @@
 from pathlib import Path
 #
 # open the VERSION file and read it into e340py.__version__
+# https://github.com/pypa/setuptools/issues/1316
 #
 __version_file__=Path(__file__).parent / Path('VERSION')
 #
