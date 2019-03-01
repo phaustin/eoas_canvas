@@ -6,7 +6,6 @@ import argparse
 import json
 from e340py.utils import make_tuple
 from pathlib import Path
-from e340py.excel_utils import make_simple
 import pdb
 import os
 import pandas as pd
@@ -30,12 +29,14 @@ def main(the_args=None):
     n=make_tuple(name_dict)
     base_dir= Path(os.environ['HOME']) / Path(n.data_dir)
     ind_grades = base_dir / Path(n.ind_file)
-    df_ind, ind_ids = make_simple(ind_grades,id_col='STUDENT ID')
+    print(f"reading {ind_grades}")
+    df_ind = pd.read_excel(ind_grades)
+    df_ind.set_index('STUDENT ID',inplace=True,drop=False)
     fsc_path = base_dir / Path(n.fsc_list)
-    df_fsc, fsc_ids=make_simple(fsc_path,id_col='Student Number')
-    key_path = base_dir / Path(n.key_file)
+    df_fsc= pd.read_excel(fsc_path)
     pdb.set_trace()
-    #df_key = pd.read_excel(str(key_path))
+    df_fsc.set_index('Student Number',inplace=True,drop=False)
+    key_path = base_dir / Path(n.key_file)
     df_key = pd.read_csv(str(key_path))
     score=grade_ids(df_ind,df_key)
     df_ind['check_score'] =copy.deepcopy(score)
@@ -61,7 +62,6 @@ def main(the_args=None):
                        | {xlist:<s}
     """
     text = textwrap.dedent(text)
-    pdb.set_trace()
     with open('out.rst','w') as f:
 
         for count,item in enumerate(out):

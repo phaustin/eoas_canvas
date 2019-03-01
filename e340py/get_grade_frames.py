@@ -3,7 +3,6 @@ functions to turn the group and individual remark excel
 files into dataframes indexed by student number
 """
 
-from .utils.excel_utils import make_simple
 import glob
 import pandas as pd
 import numpy as np
@@ -29,7 +28,7 @@ def make_group_df(group_grades):
     df_group: DataFrame
        dataframe with index set to integer student id
     """
-    df_groupraw=make_simple(group_grades)
+    df_groupraw=pd.read_csv(group_grades)
     ids=['STUDENT ID #1','STUDENT ID #2','STUDENT ID #3','STUDENT ID #4']
     id_list=[]
     total_list=[]
@@ -85,7 +84,7 @@ def make_indiv_df(ind_grades):
     df_ind: DataFrame
        DataFrame with index set to integer student numbers
     """
-    df_ind = make_simple(ind_grades)
+    df_ind = pd.read_csv(ind_grades)
     df_ind = pd.DataFrame(df_ind[['STUDENT ID','Total Score','Percent Score']])
     df_ind.rename(columns = {'STUDENT ID':'id','Total Score':'ind_total_score',
                              'Percent Score':'ind_percent_score'}, inplace = True)
@@ -105,7 +104,7 @@ def make_fsc_df(fsc_grades):
     df_fsc: DataFrame
        DataFrame with index set to integer student numbers
     """
-    df_fsc = make_simple(fsc_grades)
+    df_fsc = pd.read_csv(fsc_grades)
     df_fsc = pd.DataFrame(df_fsc[['Student Number','Surname','Given Name']])
     df_fsc.rename(columns = {'Student Number':'id','Surname':'last',
                              'Given Name':'first'}, inplace = True)

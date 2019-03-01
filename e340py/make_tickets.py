@@ -9,7 +9,6 @@ import numpy as np
 import copy
 import textwrap
 from pathlib import Path
-from .excel_utils import make_simple
 from .utils import make_tuple
 from .get_grade_frames import make_fsc_df
 
@@ -22,8 +21,9 @@ def display_marks(row,df_key,df_names):
     -------
     """
     out_dict={}
-    the_id='{:d}'.format(int(row['STUDENT ID']))
-    row['STUDENT ID']=the_id
+    the_id=int(row['STUDENT ID'])
+    txt_id=f'{the_id}'
+    row['STUDENT ID']=txt_id
     row['LAST NAME']=df_names.loc[the_id]['Surname']
     row['FIRST NAME']=df_names.loc[the_id]['Preferred Name']
     for item in ['LAST NAME', 'FIRST NAME', 'STUDENT ID','Number Incorrect','TEST FORM']:
@@ -100,11 +100,11 @@ if __name__ == "__main__":
     n=make_tuple(name_dict)    
     base_dir=Path(n.data_dir)
     ind_grades = base_dir / Path(n.ind_file)
-    df_ind = make_simple(ind_grades)
+    df_ind = pd.read_csv(ind_grades)
     fsc_path = base_dir / Path(n.fsc_list)
-    df_fsc=make_simple(fsc_path)
+    df_fsc=pd.read_cwv(fsc_path)
     key_path = base_dir / Path(n.key_file)
-    df_key = make_simple(key_path)
+    df_key = pd.read_csv(key_path)
     score=grade_ids(df_ind,df_key)
     df_ind['check_score'] =copy.deepcopy(score)
     # #group_ques=grade_ques(df_groupraw,df_key)
